@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
 import { getAuth, createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
-import { FontAwesome } from '@expo/vector-icons'; // Assuming you're using Expo and FontAwesome icons
-import { useNavigation} from '@react-navigation/native';
-
-
+import { useNavigation } from '@react-navigation/native';
+import { auth } from '../../config/firebase';
 
 const RegisterScreen = () => {
   const navigation = useNavigation();
@@ -12,20 +10,45 @@ const RegisterScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  // Email validation regex
+  const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleSignUp = async () => {
+    // Validate inputs
+    if (!fullName || !email || !password) {
+      Alert.alert('Error', 'Please fill out all fields.', [{ text: 'OK' }]);
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.', [{ text: 'OK' }]);
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Weak Password', 'Password must be at least 6 characters long.', [{ text: 'OK' }]);
+      return;
+    }
+
+    // Proceed with Firebase sign-up
     try {
-      const auth = getAuth();
+      // const auth = getAuth();
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
       // Send email verification
       await sendEmailVerification(user);
 
-      // Additional actions after successful sign-up, such as navigating to another screen
-      console.log('Sign-up successful:', user);
-      navigation.navigate('LoginScreen');
+      // Navigate to login screen
+      Alert.alert('Success', 'Registration successful. Please verify your email.', [
+        { text: 'OK', onPress: () => navigation.navigate('LoginScreen') }
+      ]);
     } catch (error) {
       console.error('Error during sign-up:', error.message);
+      Alert.alert('Sign Up Error', error.message, [{ text: 'OK' }]);
     }
   };
 
@@ -49,6 +72,7 @@ const RegisterScreen = () => {
           onChangeText={text => setEmail(text)}
           value={email}
           keyboardType="email-address"
+          autoCapitalize="none"
         />
       </View>
       <View style={styles.inputContainer}>
@@ -126,7 +150,7 @@ const styles = StyleSheet.create({
     width: 300, // Adjust the size as needed
     height: 150, // Adjust the size as needed
     resizeMode: 'contain',
-    marginBottom: -160
+    marginBottom: -160,
   },
 });
 
